@@ -3,9 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Socials</title>
-  <meta name="description" content="Use code SHAWTY for 100% luck."/>
+
+  <!-- Page title -->
+  <title>Kenzie Ford — RainBet Vibes</title>
+
+  <!-- Basic meta -->
+  <meta name="description" content="Use code SHAWTY for 100% luck. Enter the Basement for vibes, socials and a mini slot."/>
   <link rel="icon" href="https://paa.ge/_next/image?url=https%3A%2F%2Flamaco-medusa.s3.eu-west-3.amazonaws.com%2F1760588927392-header-yz3HQ0.jpg&w=1920&q=75&dpl=dpl_51iekMun2Qd3ndP6hfGai6X55sXi" type="image/png">
+
+  <!-- Open Graph (Facebook, Slack, Discord embeds, etc.) -->
+  <meta property="og:title" content="Kenzie Ford" />
+  <meta property="og:description" content="Use code SHAWTY for 100% luck. Enter the Basement!" />
+  <meta property="og:image" content="https://github.com/kenzibets/socials/raw/main/rain.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Kenzie Ford" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@kenzibettz" />
+  <meta name="twitter:title" content="Kenzie Ford — RainBet Vibes" />
+  <meta name="twitter:description" content="Use code SHAWTY for 100% luck. Enter the Basement for vibes, socials and a mini slot." />
+  <meta name="twitter:image" content="https://paa.ge/_next/image?url=https%3A%2F%2Flamaco-medusa.s3.eu-west-3.amazonaws.com%2F1760588927392-header-yz3HQ0.jpg&w=1920&q=75&dpl=dpl_51iekMun2Qd3ndP6hfGai6X55sXi" />
+
+  <!-- canonical URL (updated by JS on load to current location) -->
+  <link rel="canonical" href="https://example.com/kenzie" />
+  <!-- update og:url via JS if you want the meta to reflect the current location dynamically -->
+  <meta property="og:url" content="https://example.com/kenzie" />
 
   <style>
   :root{
@@ -24,7 +48,7 @@
 
   html,body{ min-height:100dvh; margin:0; padding:0; background:var(--bg); color:var(--soft-white); font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 
-/* Background image + blur overlay */
+  /* Background image + blur overlay */
   body::before{
     content: "";
     position: fixed; inset: 0; z-index: 0;
@@ -253,6 +277,17 @@
 /* helpers */
 const $ = (s, ctx=document) => ctx.querySelector(s);
 const $$ = (s, ctx=document) => Array.from((ctx||document).querySelectorAll(s));
+
+/* Update og:url and canonical to the current location (useful when deploying) */
+(function updateUrlMeta(){
+  try {
+    const url = location.href;
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if(ogUrl) ogUrl.setAttribute('content', url);
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if(canonical) canonical.setAttribute('href', url);
+  } catch(e){ /* ignore in restricted environments */ }
+})();
 
 /* subtle particle sparks (kept) */
 (function particleGen(){
