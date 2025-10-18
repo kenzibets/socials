@@ -422,9 +422,22 @@ function emitChipsSimple(count=8, spreadTop=78){
   window._bio_audio_playFromUserGesture = playFromUserGesture;
 })();
 
-/* slot logic (kept) */
+/* slot logic (fixed so symbols are always visible on every spin) */
 (function inlineBigSlot(){
-  const symbolImages = ['https://github.com/kenzibets/socials/raw/main/green.png','https://github.com/kenzibets/socials/raw/main/red.png','https://github.com/kenzibets/socials/raw/main/white.png','https://github.com/kenzibets/socials/raw/main/green.png','https://github.com/kenzibets/socials/raw/main/red.png','https://github.com/kenzibets/socials/raw/main/white.png','https://github.com/kenzibets/socials/raw/main/green.png','https://github.com/kenzibets/socials/raw/main/red.png','https://github.com/kenzibets/socials/raw/main/white.png','https://github.com/kenzibets/socials/raw/main/green.png','https://github.com/kenzibets/socials/raw/main/red.png','https://github.com/kenzibets/socials/raw/main/white.png'];
+  const symbolImages = [
+    'https://github.com/kenzibets/socials/raw/main/green.png',
+    'https://github.com/kenzibets/socials/raw/main/red.png',
+    'https://github.com/kenzibets/socials/raw/main/white.png',
+    'https://github.com/kenzibets/socials/raw/main/green.png',
+    'https://github.com/kenzibets/socials/raw/main/red.png',
+    'https://github.com/kenzibets/socials/raw/main/white.png',
+    'https://github.com/kenzibets/socials/raw/main/green.png',
+    'https://github.com/kenzibets/socials/raw/main/red.png',
+    'https://github.com/kenzibets/socials/raw/main/white.png',
+    'https://github.com/kenzibets/socials/raw/main/green.png',
+    'https://github.com/kenzibets/socials/raw/main/red.png',
+    'https://github.com/kenzibets/socials/raw/main/white.png'
+  ];
   const strips = [
     document.querySelector('#inlineReel1 .strip'),
     document.querySelector('#inlineReel2 .strip'),
@@ -436,6 +449,9 @@ function emitChipsSimple(count=8, spreadTop=78){
   const loops = 8;
 
   function buildStrip(stripEl){
+    // Only (re)build the long repeated strip if it's missing or too short.
+    const desiredCount = loops * symbolImages.length;
+    if (stripEl.children.length >= desiredCount) return;
     stripEl.innerHTML = '';
     for(let l=0; l<loops; l++){
       for(const img of symbolImages){
@@ -456,30 +472,33 @@ function emitChipsSimple(count=8, spreadTop=78){
   btn.addEventListener('click', async ()=>{
     btn.disabled = true;
     btn.textContent = 'Spinning...';
+
+    // Ensure strips exist and have long content
+    strips.forEach(buildStrip);
+
     const res = [randIndex(), randIndex(), randIndex()];
+
+    // Start spinning using a large target so we see a long smooth scroll
     strips.forEach((stripEl, i)=>{
-      const targetPos = (loops * symbolImages.length + res[i]) * symbolHeight;
       stripEl.style.transition = `transform ${1.0 + i*0.25}s cubic-bezier(.2,.9,.2,1)`;
+      const targetPos = (loops * symbolImages.length + res[i]) * symbolHeight;
       requestAnimationFrame(()=> stripEl.style.transform = `translateY(-${targetPos}px)`);
     });
-    await new Promise(r=> setTimeout(r, 1400 + 600));
+
+    // Wait for the animation to finish (approx duration of longest spin + buffer)
+    const longestMs = Math.round((1.0 + (strips.length-1)*0.25) * 1000);
+    await new Promise(r => setTimeout(r, longestMs + 700));
+
+    // NORMALIZE: do NOT clear innerHTML. Snap the transform to the normalized offset
     strips.forEach((stripEl, i)=>{
       stripEl.style.transition = 'none';
-      stripEl.innerHTML = '';
-      const idx = res[i];
-      const arr = [ symbolImages[idx], symbolImages[(idx+1) % symbolImages.length], symbolImages[(idx+2) % symbolImages.length], symbolImages[(idx+3) % symbolImages.length] ];
-      for(const img of arr.concat(symbolImages.slice(0,2))){
-        const d = document.createElement('div');
-        d.className = 'small-symbol';
-        const im = document.createElement('img');
-        im.src = img; im.alt = '';
-        d.appendChild(im);
-        stripEl.appendChild(d);
-      }
-      stripEl.style.transform = 'translateY(0)';
+      const normalizedOffset = res[i] * symbolHeight;
+      requestAnimationFrame(()=> stripEl.style.transform = `translateY(-${normalizedOffset}px)`);
     });
+
     btn.disabled = false;
     btn.textContent = 'SPIN';
+
     const win = res[0] === res[1] && res[1] === res[2];
     if(win){ quickToast('JACKPOT! SHAWTY did it — big win!', 3000); emitChipsSimple(18, 68); } else { quickToast('No match — try again! Use SHAWTY for better luck.', 2000); }
   });
