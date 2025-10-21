@@ -1,9 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-
   <!-- Page title -->
   <title>Socials</title>
 
@@ -48,11 +45,11 @@
 
   html,body{ min-height:100dvh; margin:0; padding:0; background:var(--bg); color:var(--soft-white); font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 
-  /* Background image + blur overlay */
+/* Background image + blur overlay */
   body::before{
     content: "";
     position: fixed; inset: 0; z-index: 0;
-    background-image: url('https://github.com/kenzibets/socials/raw/main/kenzies_basement.png');
+    background-image: url('kenzies_basement.png');
     background-size: cover; background-position: center center; background-repeat: no-repeat;
     transform: scale(1.03);
     filter: blur(10px) brightness(0.36) saturate(110%);
@@ -233,7 +230,7 @@
       </section>
 
       <!-- PLAYER (kept) -->
-      <div style="Width:100%; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
+      <div style="width:100%; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
         <div class="player" aria-label="Audio player" style="align-items:center;">
           <audio id="bg-audio" preload="auto" playsinline loop></audio>
           <div class="volume" title="Set volume" style="margin-left:8px;">
@@ -277,17 +274,6 @@
 /* helpers */
 const $ = (s, ctx=document) => ctx.querySelector(s);
 const $$ = (s, ctx=document) => Array.from((ctx||document).querySelectorAll(s));
-
-/* Update og:url and canonical to the current location (useful when deploying) */
-(function updateUrlMeta(){
-  try {
-    const url = location.href;
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if(ogUrl) ogUrl.setAttribute('content', url);
-    const canonical = document.querySelector('link[rel="canonical"]');
-    if(canonical) canonical.setAttribute('href', url);
-  } catch(e){ /* ignore in restricted environments */ }
-})();
 
 /* subtle particle sparks (kept) */
 (function particleGen(){
@@ -422,22 +408,9 @@ function emitChipsSimple(count=8, spreadTop=78){
   window._bio_audio_playFromUserGesture = playFromUserGesture;
 })();
 
-/* slot logic (fixed so symbols are always visible on every spin) */
-(async function inlineBigSlot(){
-  const symbolImages = [
-    'https://github.com/kenzibets/socials/raw/main/green.png',
-    'https://github.com/kenzibets/socials/raw/main/red.png',
-    'https://github.com/kenzibets/socials/raw/main/white.png',
-    'https://github.com/kenzibets/socials/raw/main/green.png',
-    'https://github.com/kenzibets/socials/raw/main/red.png',
-    'https://github.com/kenzibets/socials/raw/main/white.png',
-    'https://github.com/kenzibets/socials/raw/main/green.png',
-    'https://github.com/kenzibets/socials/raw/main/red.png',
-    'https://github.com/kenzibets/socials/raw/main/white.png',
-    'https://github.com/kenzibets/socials/raw/main/green.png',
-    'https://github.com/kenzibets/socials/raw/main/red.png',
-    'https://github.com/kenzibets/socials/raw/main/white.png'
-  ];
+/* slot logic (kept) */
+(function inlineBigSlot(){
+  const symbolImages = ['https://github.com/kenzibets/socials/raw/main/green.png','https://github.com/kenzibets/socials/raw/main/red.png','https://github.com/kenzibets/socials/raw/main/white.png'];
   const strips = [
     document.querySelector('#inlineReel1 .strip'),
     document.querySelector('#inlineReel2 .strip'),
@@ -448,28 +421,7 @@ function emitChipsSimple(count=8, spreadTop=78){
   const symbolHeight = 72;
   const loops = 8;
 
-  // Preload images to avoid blank placeholders during spins
-  function preloadImages(urls, timeout = 5000){
-    return new Promise((resolve) => {
-      let loaded = 0;
-      const total = urls.length;
-      const tidy = () => { if(loaded >= total) resolve(true); };
-      urls.forEach(u => {
-        const img = new Image();
-        img.decoding = 'async';
-        img.loading = 'eager';
-        img.src = u;
-        img.onload = () => { loaded++; tidy(); };
-        img.onerror = () => { loaded++; tidy(); }; // consider errored images as "ready" to avoid blocking forever
-      });
-      // safety timeout
-      setTimeout(() => resolve(true), timeout);
-    });
-  }
-
   function buildStrip(stripEl){
-    // Always build a fresh strip to guarantee continuous, non-empty content
-    const desiredCount = loops * symbolImages.length;
     stripEl.innerHTML = '';
     for(let l=0; l<loops; l++){
       for(const img of symbolImages){
@@ -478,78 +430,44 @@ function emitChipsSimple(count=8, spreadTop=78){
         const i = document.createElement('img');
         i.src = img;
         i.alt = '';
-        // ensure image area occupies space even if the image takes time to decode
-        i.style.minHeight = '64px';
-        i.style.display = 'block';
-        i.decoding = 'async';
-        i.loading = 'eager';
         d.appendChild(i);
         stripEl.appendChild(d);
       }
     }
-    // normalize transform so nothing shows blank
-    stripEl.style.transition = 'none';
-    stripEl.style.transform = 'translateY(0px)';
   }
-
-  // Wait for image preload before enabling spin
-  btn.disabled = true;
-  const originalBtnText = btn.textContent;
-  btn.textContent = 'Loading images...';
-  try {
-    await preloadImages(symbolImages, 6000);
-  } catch(e){
-    // ignore, we still build strips (errors handled as loaded)
-  }
-  // build strips initially (guarantee full content)
   strips.forEach(buildStrip);
-  btn.disabled = false;
-  btn.textContent = originalBtnText || 'SPIN';
 
   function randIndex(){ return Math.floor(Math.random() * symbolImages.length); }
 
   btn.addEventListener('click', async ()=>{
     btn.disabled = true;
     btn.textContent = 'Spinning...';
-
-    // rebuild to ensure there's no chance of short/empty strips
-    strips.forEach(buildStrip);
-
-    // choose random target indices (guaranteed to exist in the strip)
     const res = [randIndex(), randIndex(), randIndex()];
-
-    // Start spinning using a large target so we see a long smooth scroll
-    // (we use loops * symbolImages.length + res[i] so the visual scroll is long)
     strips.forEach((stripEl, i)=>{
-      // force reflow so transition will animate
-      stripEl.style.transition = `transform ${1.0 + i*0.25}s cubic-bezier(.2,.9,.2,1)`;
       const targetPos = (loops * symbolImages.length + res[i]) * symbolHeight;
-      // use requestAnimationFrame to ensure transform is applied with transition
+      stripEl.style.transition = `transform ${1.0 + i*0.25}s cubic-bezier(.2,.9,.2,1)`;
       requestAnimationFrame(()=> stripEl.style.transform = `translateY(-${targetPos}px)`);
     });
-
-    // Wait for the animation to finish (approx duration of longest spin + buffer)
-    const longestMs = Math.round((1.0 + (strips.length-1)*0.25) * 1000);
-    await new Promise(r => setTimeout(r, longestMs + 700));
-
-    // NORMALIZE: do NOT clear innerHTML. Snap the transform to the normalized offset
+    await new Promise(r=> setTimeout(r, 1400 + 600));
     strips.forEach((stripEl, i)=>{
       stripEl.style.transition = 'none';
-      const normalizedOffset = res[i] * symbolHeight;
-      requestAnimationFrame(()=> stripEl.style.transform = `translateY(-${normalizedOffset}px)`);
+      stripEl.innerHTML = '';
+      const idx = res[i];
+      const arr = [ symbolImages[idx], symbolImages[(idx+1) % symbolImages.length], symbolImages[(idx+2) % symbolImages.length], symbolImages[(idx+3) % symbolImages.length] ];
+      for(const img of arr.concat(symbolImages.slice(0,2))){
+        const d = document.createElement('div');
+        d.className = 'small-symbol';
+        const im = document.createElement('img');
+        im.src = img; im.alt = '';
+        d.appendChild(im);
+        stripEl.appendChild(d);
+      }
+      stripEl.style.transform = 'translateY(0)';
     });
-
     btn.disabled = false;
     btn.textContent = 'SPIN';
-
     const win = res[0] === res[1] && res[1] === res[2];
-    if(win){
-      // custom message requested by user
-      quickToast('congratulations you win nothing and wasted your time spinning a pointless slot but hey join the discord and enter the basement since you\\'re here :)', 7000);
-      emitChipsSimple(18, 68);
-    } else {
-      quickToast('No match — try again! Use SHAWTY for better luck.', 2000);
-    }
+    if(win){ quickToast('JACKPOT! SHAWTY did it — big win!', 3000); emitChipsSimple(18, 68); } else { quickToast('No match — try again! Use SHAWTY for better luck.', 2000); }
   });
 
   function quickToast(msg, t=1800){
@@ -591,21 +509,6 @@ function emitChipsSimple(count=8, spreadTop=78){
     });
   }
 
-  // Add keyboard support: pressing Enter (or Space) will trigger the Enter button
-  function handleEnterKey(e){
-    // support Enter and Space keys across browsers
-    const key = e.key || e.code || '';
-    if((key === 'Enter' || key === ' ' || key === 'Spacebar' || key === 'Space') ){
-      if(enterOverlay && !enterOverlay.classList.contains('hidden')){
-        e.preventDefault();
-        // trigger the same action as clicking
-        enterBtn.click();
-      }
-    }
-  }
-  // Attach handler so keyboard "Enter" works when overlay is visible
-  document.addEventListener('keydown', handleEnterKey);
-
   enterBtn.addEventListener('click', async (e) => {
     enterBtn.disabled = true;
 
@@ -628,10 +531,6 @@ function emitChipsSimple(count=8, spreadTop=78){
 
     // hide overlay and reveal main UI
     enterOverlay.classList.add('hidden');
-
-    // Remove keyboard listener now that overlay is hidden to avoid accidental triggers
-    try { document.removeEventListener('keydown', handleEnterKey); } catch(e){ /* ignore */ }
-
     mainCard.classList.remove('hidden');
     mainCard.classList.add('revealed');
 
@@ -669,7 +568,7 @@ function emitChipsSimple(count=8, spreadTop=78){
       el.style.transform='translateX(-50%)';
       el.style.padding='8px 12px';
       el.style.borderRadius='10px';
-      el.style.background='linear-gradient(90deg, rgba(186,9,99,0.12), rgba(4,8,24,0.12))';
+      el.style.background='linear-gradient(90deg, rgba(186,9,99,0.12), rgba(16,33,110,0.12))';
       el.style.border='1px solid rgba(186,9,99,0.12)';
       el.style.color='var(--soft-white)';
       el.style.zIndex=99999;
