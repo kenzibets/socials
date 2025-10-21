@@ -233,7 +233,7 @@
       </section>
 
       <!-- PLAYER (kept) -->
-      <div style="width:100%; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
+      <div style="Width:100%; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
         <div class="player" aria-label="Audio player" style="align-items:center;">
           <audio id="bg-audio" preload="auto" playsinline loop></audio>
           <div class="volume" title="Set volume" style="margin-left:8px;">
@@ -591,6 +591,21 @@ function emitChipsSimple(count=8, spreadTop=78){
     });
   }
 
+  // Add keyboard support: pressing Enter (or Space) will trigger the Enter button
+  function handleEnterKey(e){
+    // support Enter and Space keys across browsers
+    const key = e.key || e.code || '';
+    if((key === 'Enter' || key === ' ' || key === 'Spacebar' || key === 'Space') ){
+      if(enterOverlay && !enterOverlay.classList.contains('hidden')){
+        e.preventDefault();
+        // trigger the same action as clicking
+        enterBtn.click();
+      }
+    }
+  }
+  // Attach handler so keyboard "Enter" works when overlay is visible
+  document.addEventListener('keydown', handleEnterKey);
+
   enterBtn.addEventListener('click', async (e) => {
     enterBtn.disabled = true;
 
@@ -613,6 +628,10 @@ function emitChipsSimple(count=8, spreadTop=78){
 
     // hide overlay and reveal main UI
     enterOverlay.classList.add('hidden');
+
+    // Remove keyboard listener now that overlay is hidden to avoid accidental triggers
+    try { document.removeEventListener('keydown', handleEnterKey); } catch(e){ /* ignore */ }
+
     mainCard.classList.remove('hidden');
     mainCard.classList.add('revealed');
 
@@ -650,7 +669,7 @@ function emitChipsSimple(count=8, spreadTop=78){
       el.style.transform='translateX(-50%)';
       el.style.padding='8px 12px';
       el.style.borderRadius='10px';
-      el.style.background='linear-gradient(90deg, rgba(186,9,99,0.12), rgba(16,33,110,0.12))';
+      el.style.background='linear-gradient(90deg, rgba(186,9,99,0.12), rgba(4,8,24,0.12))';
       el.style.border='1px solid rgba(186,9,99,0.12)';
       el.style.color='var(--soft-white)';
       el.style.zIndex=99999;
