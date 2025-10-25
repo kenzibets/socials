@@ -45,7 +45,7 @@
 
   html,body{ min-height:100dvh; margin:0; padding:0; background:var(--bg); color:var(--soft-white); font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 
-/* Background image + blur overlay */
+  /* Background image + blur overlay */
   body::before{
     content: "";
     position: fixed; inset: 0; z-index: 0;
@@ -230,7 +230,7 @@
       </section>
 
       <!-- PLAYER (kept) -->
-      <div style="width:100%; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
+      <div style="Width:100%; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
         <div class="player" aria-label="Audio player" style="align-items:center;">
           <audio id="bg-audio" preload="auto" playsinline loop></audio>
           <div class="volume" title="Set volume" style="margin-left:8px;">
@@ -408,9 +408,16 @@ function emitChipsSimple(count=8, spreadTop=78){
   window._bio_audio_playFromUserGesture = playFromUserGesture;
 })();
 
-/* slot logic (kept) */
+/* slot logic (fixed: keep long strips and never clear them) */
 (function inlineBigSlot(){
-  const symbolImages = ['https://github.com/kenzibets/socials/raw/main/green.png','https://github.com/kenzibets/socials/raw/main/red.png','https://github.com/kenzibets/socials/raw/main/white.png'];
+  // symbol URLs (unchanged)
+  const symbolImages = [
+    'https://github.com/kenzibets/socials/raw/main/green.png',
+    'https://github.com/kenzibets/socials/raw/main/red.png',
+    'https://github.com/kenzibets/socials/raw/main/white.png'
+  ];
+
+  // elements
   const strips = [
     document.querySelector('#inlineReel1 .strip'),
     document.querySelector('#inlineReel2 .strip'),
@@ -418,12 +425,30 @@ function emitChipsSimple(count=8, spreadTop=78){
   ];
   const btn = document.getElementById('bigSpinBtnInline');
   if(!strips[0] || !btn) return;
+
   const symbolHeight = 72;
-  const loops = 8;
+
+  // Build a long repeated strip and center the visible window in the middle loop.
+  // We never clear strip.innerHTML after spins; we animate to a large offset then snap
+  // to the middle loop (same symbols) without removing DOM nodes. This prevents
+  // blank frames on subsequent spins.
+  const loops = 14; // number of repeated cycles in the DOM (long enough for multiple spins)
+  const midLoop = Math.floor(loops / 2);
+  const spinExtraLoops = 6; // how many extra loops to animate through for each spin
+
+  // Preload small images into browser cache (helps avoid flicker)
+  (function preload(){
+    for(const url of symbolImages){
+      const img = new Image();
+      img.src = url;
+    }
+  })();
 
   function buildStrip(stripEl){
     stripEl.innerHTML = '';
-    for(let l=0; l<loops; l++){
+    stripEl.style.willChange = 'transform';
+    // create loops repetitions
+    for(let l = 0; l < loops; l++){
       for(const img of symbolImages){
         const d = document.createElement('div');
         d.className = 'small-symbol';
@@ -434,7 +459,13 @@ function emitChipsSimple(count=8, spreadTop=78){
         stripEl.appendChild(d);
       }
     }
+    // pre-center to the middle loop so the visible symbols are in the center of the repeated cycles
+    const centerOffset = (midLoop * symbolImages.length) * symbolHeight;
+    stripEl.style.transition = 'none';
+    stripEl.style.transform = `translateY(-${centerOffset}px)`;
   }
+
+  // initialize all strips (keeps long DOM nodes in place)
   strips.forEach(buildStrip);
 
   function randIndex(){ return Math.floor(Math.random() * symbolImages.length); }
@@ -442,34 +473,51 @@ function emitChipsSimple(count=8, spreadTop=78){
   btn.addEventListener('click', async ()=>{
     btn.disabled = true;
     btn.textContent = 'Spinning...';
+
+    // pick results for each reel
     const res = [randIndex(), randIndex(), randIndex()];
-    strips.forEach((stripEl, i)=>{
-      const targetPos = (loops * symbolImages.length + res[i]) * symbolHeight;
-      stripEl.style.transition = `transform ${1.0 + i*0.25}s cubic-bezier(.2,.9,.2,1)`;
-      requestAnimationFrame(()=> stripEl.style.transform = `translateY(-${targetPos}px)`);
+
+    // Start animation: animate to a *far* offset (middle + spinExtraLoops) so it spins visually.
+    strips.forEach((stripEl, i) => {
+      // compute target: we animate from middle loop to middle+spinExtraLoops and land on res[i]
+      const targetPos = ((midLoop + spinExtraLoops + i) * symbolImages.length + res[i]) * symbolHeight;
+      // set per-reel duration for staggered stop feel
+      const duration = 1000 + i * 250; // ms
+      stripEl.style.transition = `transform ${duration}ms cubic-bezier(.2,.9,.2,1)`;
+      // force layout then apply transform to ensure transition runs
+      requestAnimationFrame(()=> requestAnimationFrame(()=> {
+        stripEl.style.transform = `translateY(-${targetPos}px)`;
+      }));
     });
-    await new Promise(r=> setTimeout(r, 1400 + 600));
-    strips.forEach((stripEl, i)=>{
+
+    // Wait for the longest reel animation to finish (use a little extra padding)
+    await new Promise(r => setTimeout(r, 1000 + (2 * 250) + 160));
+
+    // Snap each strip back to the middle loop position for stability (no DOM changes).
+    // This keeps the same visible symbol but resets transform to the middle copy so
+    // future spins have plenty of room and no empty DOM.
+    strips.forEach((stripEl, i) => {
+      // disable transition then set transform to the middle loop + result index
+      const midPos = (midLoop * symbolImages.length + res[i]) * symbolHeight;
       stripEl.style.transition = 'none';
-      stripEl.innerHTML = '';
-      const idx = res[i];
-      const arr = [ symbolImages[idx], symbolImages[(idx+1) % symbolImages.length], symbolImages[(idx+2) % symbolImages.length], symbolImages[(idx+3) % symbolImages.length] ];
-      for(const img of arr.concat(symbolImages.slice(0,2))){
-        const d = document.createElement('div');
-        d.className = 'small-symbol';
-        const im = document.createElement('img');
-        im.src = img; im.alt = '';
-        d.appendChild(im);
-        stripEl.appendChild(d);
-      }
-      stripEl.style.transform = 'translateY(0)';
+      stripEl.style.transform = `translateY(-${midPos}px)`;
     });
+
+    // Restore button
     btn.disabled = false;
     btn.textContent = 'SPIN';
+
+    // Win check
     const win = res[0] === res[1] && res[1] === res[2];
-    if(win){ quickToast('JACKPOT! SHAWTY did it — big win!', 3000); emitChipsSimple(18, 68); } else { quickToast('No match — try again! Use SHAWTY for better luck.', 2000); }
+    if(win){
+      quickToast('JACKPOT! SHAWTY did it — big win!', 3000);
+      emitChipsSimple(18, 68);
+    } else {
+      quickToast('No match — try again! Use SHAWTY for better luck.', 2000);
+    }
   });
 
+  // small quickToast used inside this closure (falls back to global if needed)
   function quickToast(msg, t=1800){
     let el = document.getElementById('kb-toast');
     if(!el){
